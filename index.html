@@ -31,7 +31,15 @@
         canvas.width = size;
         canvas.height = size;
         const context = canvas.getContext("2d");
-        context.clearRect(0, 0, size, size);
+        if ((x + y) % 2 == 0) {
+            //背景透明
+            context.clearRect(0, 0, size, size);
+        } else {
+            context.clearRect(0, 0, size, size);
+            //灰色半透明背景
+            context.fillStyle = "rgba(0,0,0, 0.1)";
+            context.fillRect(0, 0, size, size);
+        }
         //绘制边框
         context.strokeStyle = "black";
         context.lineWidth = 1;
@@ -41,13 +49,18 @@
         context.fillStyle = "black";
         context.textAlign = "left";
         context.textBaseline = "top";
+        //绘制字体阴影
+        context.shadowColor = "rgba(255, 255, 255, 0.8)";
+        context.shadowOffsetX = 2;
+        context.shadowOffsetY = 2;
+        context.shadowBlur = 10;
         //字体竖着展示
-        context.fillText(`z: ${z}`, 10, 10);
-        context.fillText(`x: ${x}`, 10, 30);
-        context.fillText(`y: ${y}`, 10, 50);
+        // context.fillText(`Z:${z}`, 10, 10);
+        // context.fillText(`X:${x}`, 10, 30);
+        // context.fillText(`Y:${y}`, 10, 50);
         //字体并排展示
-        // const text = `z: ${z}, x: ${x}, y: ${y}`;
-        // context.fillText(text, 10, 10)
+        const text = `Z:${z}, X:${x}, Y:${y}`;
+        context.fillText(text, 10, 10);
         return canvas.toDataURL("image/png");
     }
 
@@ -135,14 +148,15 @@
             prefix: null
         }).addAttribution("<a href=\"https://leafletjs.com/\">Leaflet</a> &copy; <a href=\"https://meethigher.top/wkt\">meethigher</a>").addTo(map);
         //zIndex大的layer会将小的layer覆盖掉。但实际请求的顺序是以地图加载顺序由前往后加载的。
+        let maxZoom=19;
         let sourceLayer = new L.TileLayer.Custom("https://meethigher.top/wkt/{z}/{x}/{y}", {
             noWrap: true,
-            maxZoom: 10,
+            maxZoom: maxZoom,
             zIndex: 1
         });
         let boundaryLayer = new L.TileLayer.Base64("https://layer.clockworkmicro.com/v1/webtileboundaries?z={z}&x={x}&y={y}", {
             noWrap: true,
-            maxZoom: 10,
+            maxZoom: maxZoom,
             zIndex: 99
         });
         boundaryLayer.addTo(map);
