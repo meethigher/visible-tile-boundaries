@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Visible Tile Boundaries</title>
+    <title>瓦片边界可视化-VisibleTileBoundaries</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css"/>
@@ -18,26 +18,29 @@
 <body>
 <div id="map" style="width:100vw;height:100vh;"></div>
 <script>
+    function printDefaultLog() {
+        console.log("%c@author：Kit Chen\n@createDate：2024-06-10\n@blog：https://meethigher.top/blog/2022/wkt-show-on-openlayers/\n@github：https://github.com/meethigher/visible-tile-boundaries\n@页面加载耗时：" + (performance.now() / 1000).toFixed(2) + "秒", "font-size:18px; font-weight:bold; color:#24a0f0;");
+    }
 
     /**
      * 创建一个生成瓦片边界的png
      */
     function createBase64Tile(z, x, y) {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         const size = 256;
         canvas.width = size;
         canvas.height = size;
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext("2d");
         context.clearRect(0, 0, size, size);
         //绘制边框
-        context.strokeStyle = 'black';
+        context.strokeStyle = "black";
         context.lineWidth = 1;
         context.strokeRect(0, 0, size, size);
         //绘制额字体
-        context.font = '20px Arial';
-        context.fillStyle = 'black';
-        context.textAlign = 'left';
-        context.textBaseline = 'top';
+        context.font = "20px Arial";
+        context.fillStyle = "black";
+        context.textAlign = "left";
+        context.textBaseline = "top";
         //字体竖着展示
         context.fillText(`z: ${z}`, 10, 10);
         context.fillText(`x: ${x}`, 10, 30);
@@ -45,7 +48,7 @@
         //字体并排展示
         // const text = `z: ${z}, x: ${x}, y: ${y}`;
         // context.fillText(text, 10, 10)
-        return canvas.toDataURL('image/png');
+        return canvas.toDataURL("image/png");
     }
 
 
@@ -62,7 +65,7 @@
                 // 返回有效的切片URL
                 return L.TileLayer.prototype.getTileUrl.call(this, coords);
             } else {
-                return "";
+                return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAAAAAB5Gfe6AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABOElEQVR42u3QgQAAAAwEofd3PJeBrBBaz02AAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAioA1wPDPTdUxI5AAAAAElFTkSuQmCC";
             }
         },
         isValidTile: function (z, x, y) {
@@ -86,7 +89,7 @@
             if (this.isValidTile(z, x, y)) {
                 return createBase64Tile(z, x, y);
             } else {
-                return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAAAAAB5Gfe6AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABOElEQVR42u3QgQAAAAwEofd3PJeBrBBaz02AAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAioA1wPDPTdUxI5AAAAAElFTkSuQmCC';
+                return "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAAAAAB5Gfe6AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABOElEQVR42u3QgQAAAAwEofd3PJeBrBBaz02AAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAgQIECAAAECBAioA1wPDPTdUxI5AAAAAElFTkSuQmCC";
             }
 
         },
@@ -100,28 +103,38 @@
         },
 
         createTile: function (coords, done) {
-            var tile = document.createElement('img');
+            var tile = document.createElement("img");
             tile.onload = function () {
                 done(null, tile);
             };
             tile.onerror = function () {
-                done(new Error('Tile loading error'), tile);
+                done(new Error("Tile loading error"), tile);
             };
             var url = this.getTileUrl(coords);
             if (url) {
                 tile.src = url;
             } else {
-                done(new Error('Tile not found'), tile);
+                done(new Error("Tile not found"), tile);
             }
             return tile;
         }
     });
 </script>
 <script>
+    printDefaultLog();
     window.onload = function () {
-        var opts = {"zoomSnap": 0.1, "zoomDelta": 0.1}
+        var opts = {
+            "zoomSnap": 0.1,
+            "zoomDelta": 0.1,
+            //控制默认右下角版权信息控制
+            attributionControl: false
+        };
         var map = L.map(document.getElementById("map"), opts).setView([1, 0], 0);
-        //zIndex大的layer会将小的layer覆盖掉。但实际请求的速度是以代码顺序由前往后加载的。
+        //添加自定义版权信息，跟默认的并不冲突
+        L.control.attribution({
+            prefix: null
+        }).addAttribution("<a href=\"https://leafletjs.com/\">Leaflet</a> &copy; <a href=\"https://meethigher.top/wkt\">meethigher</a>").addTo(map);
+        //zIndex大的layer会将小的layer覆盖掉。但实际请求的顺序是以地图加载顺序由前往后加载的。
         let sourceLayer = new L.TileLayer.Custom("https://meethigher.top/wkt/{z}/{x}/{y}", {
             noWrap: true,
             maxZoom: 10,
@@ -131,12 +144,10 @@
             noWrap: true,
             maxZoom: 10,
             zIndex: 99
-        })
-        boundaryLayer.addTo(map)
-
+        });
+        boundaryLayer.addTo(map);
         sourceLayer.addTo(map);
-
-    }
+    };
 </script>
 </body>
 </html>
