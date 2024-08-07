@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>瓦片边界可视化-VisibleTileBoundaries</title>
+    <title>瓦片边界可视化_致敬开源</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css"/>
@@ -44,23 +44,28 @@
         context.strokeStyle = "black";
         context.lineWidth = 1;
         context.strokeRect(0, 0, size, size);
-        //绘制额字体
-        context.font = "20px Arial";
-        context.fillStyle = "black";
+        //字体
+        const textHeight = 20;
+        context.font = `bold ${textHeight}px Arial`;
+        context.fillStyle = "white";
         context.textAlign = "left";
         context.textBaseline = "top";
-        //绘制字体阴影
-        context.shadowColor = "rgba(255, 255, 255, 0.8)";
-        context.shadowOffsetX = 2;
-        context.shadowOffsetY = 2;
-        context.shadowBlur = 10;
-        //字体竖着展示
-        // context.fillText(`Z:${z}`, 10, 10);
-        // context.fillText(`X:${x}`, 10, 30);
-        // context.fillText(`Y:${y}`, 10, 50);
         //字体并排展示
-        const text = `Z:${z}, X:${x}, Y:${y}`;
-        context.fillText(text, 10, 10);
+        yy = (2 ** z) - 1 - y;
+        const text = `Google: (${x},${y})`;
+        const text1 = `TMS: (${x},${yy})`;
+        const text2 = `Zoom ${z}`;
+        const x1 = canvas.width / 2;
+        const y1 = canvas.height / 2;
+        // 设置文本描边颜色为黑色
+        context.strokeStyle = "black";
+        context.lineWidth = 1; // 设置描边宽度
+        context.fillText(text, x1 - context.measureText(text).width / 2, y1 - textHeight * 2);
+        context.strokeText(text, x1 - context.measureText(text).width / 2, y1 - textHeight * 2);
+        context.fillText(text1, x1 - context.measureText(text1).width / 2, y1 - textHeight);
+        context.strokeText(text1, x1 - context.measureText(text1).width / 2, y1 - textHeight);
+        context.fillText(text2, x1 - context.measureText(text2).width / 2, y1);
+        context.strokeText(text2, x1 - context.measureText(text2).width / 2, y1);
         return canvas.toDataURL("image/png");
     }
 
@@ -146,10 +151,12 @@
         //添加自定义版权信息，跟默认的并不冲突
         L.control.attribution({
             prefix: null
-        }).addAttribution("<a href=\"https://leafletjs.com/\">Leaflet</a> &copy; <a href=\"https://meethigher.top/wkt\">meethigher</a>").addTo(map);
+        }).addAttribution("<a href=\"https://meethigher.top/blog/2024/visible-tile-boundaries/\">UnderstandingTiles</a> <a href=\"https://leafletjs.com/\">Leaflet</a> &copy; <a href=\"https://meethigher.top/wkt\">meethigher</a>").addTo(map);
         //zIndex大的layer会将小的layer覆盖掉。但实际请求的顺序是以地图加载顺序由前往后加载的。
-        let maxZoom=19;
-        let sourceLayer = new L.TileLayer.Custom("https://meethigher.top/wkt/{z}/{x}/{y}", {
+        let maxZoom = 19;
+        //let layerUrl="https://meethigher.top/wkt/{z}/{x}/{y}";//自建服务
+        let layerUrl="https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}";//高德
+        let sourceLayer = new L.TileLayer.Custom(layerUrl, {
             noWrap: true,
             maxZoom: maxZoom,
             zIndex: 1
