@@ -97,7 +97,7 @@
             box-shadow: 0 0 0 4px rgba(0, 200, 169, 0.2);
         }
 
-        #loadBtn {
+        #loadBtn, #showLonLatModal, #showZXYModal {
             padding: 14px 32px;
             font-size: 16px;
             font-weight: 500;
@@ -112,12 +112,12 @@
             gap: 8px;
         }
 
-        #loadBtn:hover {
+        #loadBtn:hover, #showLonLatModal:hover, #showZXYModal:hover {
             transform: scale(1.02);
             box-shadow: 0 4px 16px rgba(0, 200, 169, 0.3);
         }
 
-        #loadBtn:disabled {
+        #loadBtn:disabled, #showLonLatModal:disabled, #showZXYModal:disabled {
             opacity: 0.6;
             cursor: not-allowed;
         }
@@ -146,6 +146,8 @@
 
             #tileUrlInput,
             #loadBtn,
+            #showZXYModal,
+            #showLonLatModal,
             #builtInUrls {
                 flex: 1 1 0px;
                 width: 100%;
@@ -180,9 +182,85 @@
     </select>
     <input type="text" id="tileUrlInput" placeholder="输入自定义瓦片地址，例如 http://abc.com/raster/{z}/{x}/{y}.png"/>
     <button id="loadBtn">加载瓦片</button>
+    <button id="showZXYModal" style=" background: #4a90e2; color: white;">Z/X/Y转Polygon</button>
+    <button id="showLonLatModal" style=" background: #f5a623; color: white;">经纬度转Z/X/Y</button>
 </div>
 
 <div id="map"></div>
+<!-- 模态框容器 -->
+<div id="modalContainer"
+     style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 16px; width: 90%; max-width: 500px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 id="modalTitle"></h3>
+            <span id="closeModal" style="cursor: pointer; font-size: 24px; color: #666;" onclick="closeModal()">×</span>
+        </div>
+        <!-- ZXY转Polygon表单 -->
+        <form id="zxyForm" style="display: none;">
+            <div style="margin-bottom: 12px;">
+                <label>缩放级别(Z)：</label>
+                <input type="number" id="zInput" min="0" max="20" step="1" required
+                       style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label>列号(X)：</label>
+                <input type="number" id="xInput" min="0" step="1" required
+                       style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label>行号(Y)：</label>
+                <input type="number" id="yInput" min="0" step="1" required
+                       style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label>坐标原点：</label>
+                <select id="cornerTypeZXY"
+                        style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <option value="leftTop">Google坐标系（左上角）</option>
+                    <option value="leftBottom">TMS坐标系（左下角）</option>
+                </select>
+            </div>
+            <button type="button" onclick="calculatePolygon()"
+                    style="width: 100%; padding: 10px; background: #4a90e2; color: white; border: none; border-radius: 20px; cursor: pointer;">
+                计算Polygon
+            </button>
+        </form>
+
+        <!-- 经纬度转ZXY表单 -->
+        <form id="lonLatForm" style="display: none;">
+            <div style="margin-bottom: 12px;">
+                <label>经度(Lon)：</label>
+                <input type="number" id="lonInput" min="-180" max="180" step="0.0001" required
+                       style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label>纬度(Lat)：</label>
+                <input type="number" id="latInput" min="-85" max="85" step="0.0001" required
+                       style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label>缩放级别(Z)：</label>
+                <input type="number" id="zzInput" min="0" max="20" step="1" required
+                       style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+            </div>
+            <div style="margin-bottom: 12px;">
+                <label>坐标原点：</label>
+                <select id="cornerTypeLonLat"
+                        style="width: 100%; padding: 8px; border: 1px solid #e0e0e0; border-radius: 8px;">
+                    <option value="leftTop">Google坐标系（左上角）</option>
+                    <option value="leftBottom">TMS坐标系（左下角）</option>
+                </select>
+            </div>
+            <button type="button" onclick="calculateTileCoords()"
+                    style="width: 100%; padding: 10px; background: #f5a623; color: white; border: none; border-radius: 20px; cursor: pointer;">
+                计算Z/X/Y
+            </button>
+        </form>
+
+        <div id="resultDisplay"
+             style="margin-top: 20px; white-space: pre-wrap; word-break: break-all; padding: 12px; border: 1px solid #e0e0e0; border-radius: 8px;"></div>
+    </div>
+</div>
 
 <script src="https://meethigher.top/js/analysis.js"></script>
 <script src="js/leaflet.js"></script>
@@ -357,17 +435,24 @@
     }
 
     // 通过 经纬度 和 zoom 计算 z/x/y
-    function lonLat2Tile(lon, lat, z) {
+    function lonLat2Tile(lon, lat, z, cornerType = "leftTop") {
         const x = Math.floor((lon + 180) / 360 * Math.pow(2, z));
-        const y = Math.floor(
+        let y = Math.floor(
             (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z)
         );
-        return {z, x, y};
+        if (cornerType === "leftTop") {
+            return {z, x, y};
+        } else if (cornerType === "leftBottom") {
+            y = Math.pow(2, z) - y - 1;
+            return {z, x, y};
+        } else {
+            throw new Error("cornerType 只能是 leftTop 或 leftBottom");
+        }
     }
 </script>
 <script>
     const maxZoom = 19;
-    const defaultTileUrl = "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
+    const defaultTileUrl = "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}";
     const options = {
         zoomSnap: 0.1,  // 允许任意小数缩放
         zoomDelta: 0.1,  // 每次缩放变化 zoomDelta 级
@@ -496,6 +581,56 @@
             icon.src = "assets/up.svg";
         }
     });
+
+    // 打开模态框
+    function openModal(type) {
+        document.getElementById("modalContainer").style.display = "block";
+        document.getElementById("zxyForm").style.display = type === "zxy" ? "block" : "none";
+        document.getElementById("lonLatForm").style.display = type === "lonlat" ? "block" : "none";
+        document.getElementById("modalTitle").textContent = type === "zxy" ? "Z/X/Y转Polygon" : "经纬度转Z/X/Y";
+        document.getElementById("resultDisplay").textContent = "";
+    }
+
+    // 关闭模态框
+    function closeModal() {
+        document.getElementById("modalContainer").style.display = "none";
+        document.getElementById("zxyForm").style.display = "none";
+        document.getElementById("lonLatForm").style.display = "none";
+    }
+
+    // 绑定按钮事件
+    document.getElementById("showZXYModal").addEventListener("click", () => openModal("zxy"));
+    document.getElementById("showLonLatModal").addEventListener("click", () => openModal("lonlat"));
+
+    // Z/X/Y转Polygon
+    function calculatePolygon() {
+        const z = parseInt(document.getElementById("zInput").value);
+        const x = parseInt(document.getElementById("xInput").value);
+        const y = parseInt(document.getElementById("yInput").value);
+        const cornerType = document.getElementById("cornerTypeZXY").value;
+
+        try {
+            const wkt = tileBoundsWKT(z, x, y, cornerType);
+            document.getElementById("resultDisplay").textContent = `${wkt}`;
+        } catch (error) {
+            document.getElementById("resultDisplay").textContent = `错误：${error.message}`;
+        }
+    }
+
+    // 经纬度转Z/X/Y
+    function calculateTileCoords() {
+        const lon = parseFloat(document.getElementById("lonInput").value);
+        const lat = parseFloat(document.getElementById("latInput").value);
+        const zoom = parseFloat(document.getElementById("zzInput").value);
+        const cornerType = document.getElementById("cornerTypeLonLat").value;
+
+        try {
+            const {z, x, y} = lonLat2Tile(lon, lat, zoom, cornerType);
+            document.getElementById("resultDisplay").textContent = `Z: ${z}\nX: ${x}\nY: ${y}`;
+        } catch (error) {
+            document.getElementById("resultDisplay").textContent = `错误：${error.message}`;
+        }
+    }
 </script>
 </body>
 
