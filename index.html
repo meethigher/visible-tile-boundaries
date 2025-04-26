@@ -1,22 +1,184 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
-    <title>瓦片边界可视化_致敬开源</title>
+    <title>瓦片边界可视化</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css"/>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.js"></script>
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
     <style>
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+            background-color: #f0f8f9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #map {
+            flex: 1;
+            width: 100%;
+            height: 0;
+            min-height: 60vh;
+            transition: height 0.3s ease;
+        }
+
+        #toggleControls {
+            position: fixed;
+            top: 0px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1002;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+        }
+
+        #toggleControls i {
+            font-size: 20px;
+            color: #00c8a9;
+        }
+
+        #controls {
+            background: white;
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 200, 169, 0.15);
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1200px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 16px;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #controls.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #tileUrlInput {
+            flex: 1 1 300px;
+            min-width: 200px;
+            padding: 14px 20px;
+            font-size: 16px;
+            border: 2px solid #e0f5f2;
+            border-radius: 28px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        #tileUrlInput:focus {
+            border-color: #00c8a9;
+            box-shadow: 0 0 0 4px rgba(0, 200, 169, 0.2);
+        }
+
+        #loadBtn {
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 500;
+            color: white;
+            background: linear-gradient(135deg, #00e6b8, #00c8a9);
+            border: none;
+            border-radius: 28px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #loadBtn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 16px rgba(0, 200, 169, 0.3);
+        }
+
+        #loadBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #builtInUrls {
+            padding: 14px 20px;
+            font-size: 16px;
+            border: 2px solid #e0f5f2;
+            border-radius: 28px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        #builtInUrls:focus {
+            border-color: #00c8a9;
+            box-shadow: 0 0 0 4px rgba(0, 200, 169, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            #controls {
+                top: 16px;
+                padding: 10px;
+                flex-direction: column;
+                border-radius: 16px;
+            }
+
+            #tileUrlInput,
+            #loadBtn,
+            #builtInUrls {
+                flex: 1 1 0px;
+                width: 100%;
+                max-width: 400px;
+            }
+        }
     </style>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
 </head>
+
 <body>
-<div id="map" style="width:100vw;height:100vh;"></div>
+<button id="toggleControls">
+    <i class="fa-solid fa-chevron-down"></i>
+</button>
+<div id="controls">
+    <select id="builtInUrls">
+        <option value="custom">自定义</option>
+        <option value="https://tile.openstreetmap.org/{z}/{x}/{y}.png">OpenStreetMap</option>
+        <option value="https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}">高德地图</option>
+        <option value="https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}">高德地图高亮</option>
+        <option value="https://webst01.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}">高德卫星影像</option>
+        <option value="https://webst01.is.autonavi.com/appmaptile?style=8&x={x}&y={y}&z={z}">高德地图路网</option>
+        <option value="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}">ArcGIS 影像</option>
+        <option value="https://server.arcgisonline.com/arcgis/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}.png">ArcGIS 街道</option>
+    </select>
+    <input type="text" id="tileUrlInput" placeholder="输入自定义瓦片地址，例如 http://abc.com/raster/{z}/{x}/{y}.png"/>
+    <button id="loadBtn">加载瓦片</button>
+</div>
+
+<div id="map"></div>
+
+<script src="https://meethigher.top/js/analysis.js"></script>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
     function printDefaultLog() {
         console.log("%c@author：Kit Chen\n@createDate：2024-06-10\n@blog：https://meethigher.top/blog/2022/wkt-show-on-openlayers/\n@github：https://github.com/meethigher/visible-tile-boundaries\n@页面加载耗时：" + (performance.now() / 1000).toFixed(2) + "秒", "font-size:18px; font-weight:bold; color:#24a0f0;");
@@ -137,38 +299,194 @@
             return tile;
         }
     });
+
+    // 计算瓦片左上角或者左下角经纬度
+    function tile2lon(x, z) {
+        return (x / Math.pow(2, z)) * 360 - 180;
+    }
+
+    function tile2lat(y, z, cornerType = "leftTop") {
+        if (cornerType === "leftBottom") {
+            y = Math.pow(2, z) - y - 1;
+        }
+        const n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
+        return (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+    }
+
+    // 通过 z/x/y 和 cornerType（'leftTop' 或 'leftBottom'） 生成 WKT Polygon
+    function tileBoundsWKT(z, x, y, cornerType = "leftTop") {
+        const lonLeft = tile2lon(x, z);
+        const lonRight = tile2lon(x + 1, z);
+        let latTop;
+        let latBottom;
+        let coords;
+
+        if (cornerType === "leftTop") {
+            latTop = tile2lat(y, z, cornerType);
+            latBottom = tile2lat(y + 1, z, cornerType);
+            coords = [
+                [lonLeft, latTop],
+                [lonRight, latTop],
+                [lonRight, latBottom],
+                [lonLeft, latBottom],
+                [lonLeft, latTop] // 闭合
+            ];
+        } else if (cornerType === "leftBottom") {
+            latTop = tile2lat(y, z, cornerType);
+            latBottom = tile2lat(y - 1, z, cornerType);
+            coords = [
+                [lonLeft, latBottom],
+                [lonRight, latBottom],
+                [lonRight, latTop],
+                [lonLeft, latTop],
+                [lonLeft, latBottom] // 闭合
+            ];
+        } else {
+            throw new Error("cornerType 只能是 leftTop 或 leftBottom");
+        }
+
+        const coordStr = coords.map(c => `${c[0]} ${c[1]}`).join(", ");
+        return `POLYGON((${coordStr}))`;
+    }
+
+    // 通过 经纬度 和 zoom 计算 z/x/y
+    function lonLat2Tile(lon, lat, z) {
+        const x = Math.floor((lon + 180) / 360 * Math.pow(2, z));
+        const y = Math.floor(
+            (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, z)
+        );
+        return {z, x, y};
+    }
 </script>
 <script>
-    printDefaultLog();
-    window.onload = function () {
-        var opts = {
-            "zoomSnap": 0.1,
-            "zoomDelta": 0.1,
-            //控制默认右下角版权信息控制
-            attributionControl: false
-        };
-        var map = L.map(document.getElementById("map"), opts).setView([1, 0], 0);
-        //添加自定义版权信息，跟默认的并不冲突
-        L.control.attribution({
-            prefix: null
-        }).addAttribution("<a href=\"https://meethigher.top/blog/2024/visible-tile-boundaries/\">UnderstandingTiles</a> <a href=\"https://leafletjs.com/\">Leaflet</a> &copy; <a href=\"https://meethigher.top/wkt\">meethigher</a>").addTo(map);
-        //zIndex大的layer会将小的layer覆盖掉。但实际请求的顺序是以地图加载顺序由前往后加载的。
-        let maxZoom = 19;
-        //let layerUrl="https://meethigher.top/wkt/{z}/{x}/{y}";//自建服务
-        let layerUrl="https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=7&x={x}&y={y}&z={z}";//高德
-        let sourceLayer = new L.TileLayer.Custom(layerUrl, {
-            noWrap: true,
-            maxZoom: maxZoom,
-            zIndex: 1
-        });
-        let boundaryLayer = new L.TileLayer.Base64("https://layer.clockworkmicro.com/v1/webtileboundaries?z={z}&x={x}&y={y}", {
-            noWrap: true,
-            maxZoom: maxZoom,
-            zIndex: 99
-        });
-        boundaryLayer.addTo(map);
-        sourceLayer.addTo(map);
+    const maxZoom = 19;
+    const defaultTileUrl = "https://webrd04.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}";
+    const options = {
+        zoomSnap: 0.1,  // 允许任意小数缩放
+        zoomDelta: 0.1,  // 每次缩放变化 zoomDelta 级
+        //控制默认右下角版权信息控制
+        attributionControl: false
     };
+    const map = L.map("map", options).setView([1, 0], 1);
+    //添加自定义版权信息，跟默认的并不冲突
+    L.control.attribution({
+        prefix: null
+    }).addAttribution("<a href=\"https://meethigher.top/blog/2024/visible-tile-boundaries/\">UnderstandingTiles</a> <a href=\"https://leafletjs.com/\">Leaflet</a> &copy; <a href=\"https://meethigher.top/wkt\">meethigher</a>").addTo(map);
+
+    let tileLayer = new L.TileLayer.Custom(defaultTileUrl, {
+        noWrap: true,
+        maxZoom: maxZoom,
+        zIndex: 1
+    }).addTo(map);
+
+    let boundaryLayer = new L.TileLayer.Base64("https://layer.clockworkmicro.com/v1/webtileboundaries?z={z}&x={x}&y={y}", {
+        noWrap: true,
+        maxZoom: maxZoom,
+        zIndex: 99
+    }).addTo(map);
+
+
+    /**
+     * Leaflet默认为了流畅和性能，旧瓦片渲染过了就继续保留在画布上，只要不大幅平移或缩放太多，不会主动清掉。
+     * 这会导致透明的边界图还在上面，因此需要先移除再放置
+     */
+    map.on("zoomstart", function () {
+        boundaryLayer.remove();
+    });
+
+    map.on("zoomend", function () {
+        boundaryLayer.addTo(map);
+    });
+
+
+    const tileUrlInput = document.getElementById("tileUrlInput");
+    const loadBtn = document.getElementById("loadBtn");
+    const toggleControls = document.getElementById("toggleControls");
+    const controls = document.getElementById("controls");
+    const builtInUrls = document.getElementById("builtInUrls");
+
+    let isLoading = false;
+    const setLoading = (status) => {
+        isLoading = status;
+        loadBtn.disabled = status;
+        loadBtn.textContent = status ? "加载中..." : "加载瓦片";
+    };
+
+    const loadTileLayer = (url) => {
+        if (isLoading) return;
+        if (url) {
+            setLoading(true);
+            try {
+                if (tileLayer) {
+                    map.removeLayer(tileLayer);
+                }
+
+                // 先保存当前中心点和缩放级别
+                const center = map.getCenter();
+                const zoom = map.getZoom();
+
+                // 创建新的 tileLayer
+                tileLayer = new L.TileLayer.Custom(url, {
+                    noWrap: true,
+                    maxZoom: maxZoom,
+                    zIndex: 1
+                }).addTo(map);
+
+                // 重新把地图中心和缩放设置回来（不会跳）
+                map.setView(center, zoom);
+            } catch (error) {
+                console.error("瓦片加载失败", error);
+                alert("无效的瓦片地址，请检查格式");
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
+    loadBtn.addEventListener("click", () => {
+        const customUrl = tileUrlInput.value.trim();
+        const selectedUrl = builtInUrls.value;
+        const url = customUrl || (selectedUrl === "custom" ? "" : selectedUrl);
+        loadTileLayer(url);
+    });
+
+    builtInUrls.addEventListener("change", () => {
+        const selectedUrl = builtInUrls.value;
+        if (selectedUrl === "custom") {
+            tileUrlInput.value = "";
+            tileUrlInput.disabled = false;
+            tileUrlInput.placeholder = "输入自定义瓦片地址，例如 https://meethigher.top/wkt/{z}/{x}/{y}.png";
+        } else {
+            tileUrlInput.value = selectedUrl;
+            tileUrlInput.disabled = true;
+            tileUrlInput.placeholder = "";
+        }
+    });
+
+    tileUrlInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !isLoading) {
+            loadBtn.click();
+        }
+    });
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const height = window.innerHeight - document.getElementById("controls").offsetHeight - 40;
+        document.getElementById("map").style.height = `${height}px`;
+    });
+
+    window.addEventListener("resize", () => {
+        const controlsHeight = document.getElementById("controls").offsetHeight;
+        const mapHeight = window.innerHeight - controlsHeight - 40;
+        document.getElementById("map").style.height = `${mapHeight}px`;
+    });
+
+    toggleControls.addEventListener("click", () => {
+        controls.classList.toggle("show");
+        const icon = toggleControls.querySelector("i");
+        icon.classList.toggle("fa-chevron-down");
+        icon.classList.toggle("fa-chevron-up");
+    });
 </script>
 </body>
+
 </html>
